@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dynasty Draft Board</title>
+  <meta name="description" content="A live fantasy football draft board that pulls your league from MyFantasyLeague and runs entirely in your browser." />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏈</text></svg>" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="app-header">
+    <div class="brand">
+      <span class="brand-mark">🏈</span>
+      <div>
+        <div class="brand-title">Dynasty Draft Board</div>
+        <div class="brand-sub" id="brandSub">Pull your MyFantasyLeague teams · draft locally</div>
+      </div>
+    </div>
+    <div class="header-controls">
+      <label class="field inline">
+        <span>Board</span>
+        <select id="boardSelect" aria-label="Select board"></select>
+      </label>
+      <button class="btn ghost" id="newBoardBtn" type="button">+ New board</button>
+      <button class="btn ghost" id="settingsBtn" type="button" title="Settings &amp; data">⚙</button>
+    </div>
+  </header>
+
+  <main id="main">
+    <!-- ============ EMPTY STATE ============ -->
+    <section id="emptyState" class="empty hidden">
+      <div class="empty-card">
+        <h1>Build your draft board</h1>
+        <p>Pull your league's teams straight from MyFantasyLeague, then run your draft right here — picks and draft-day trades are saved in your browser. Nothing leaves your device.</p>
+        <div class="empty-actions">
+          <button class="btn primary lg" id="loadMineBtn" type="button">⚡ Load my league — Loyal Order of Water Buffaloes</button>
+          <button class="btn lg" id="emptyCreateBtn" type="button">Set up a different league</button>
+        </div>
+        <p class="muted small" id="loadMineNote">One-click loads your 10-team board with the draft order and 8 existing trades already in place.</p>
+      </div>
+    </section>
+
+    <!-- ============ SETUP / IMPORT ============ -->
+    <section id="setupSection" class="panel collapsible">
+      <button class="panel-head" id="setupToggle" type="button" aria-expanded="true">
+        <h2>1 · League setup</h2>
+        <span class="chev">▾</span>
+      </button>
+      <div class="panel-body" id="setupBody">
+        <div class="grid-2">
+          <div class="card">
+            <h3>Import from MyFantasyLeague</h3>
+            <p class="muted small">Enter your season &amp; league ID. We'll grab your team names automatically.</p>
+            <div class="row">
+              <label class="field">
+                <span>Season</span>
+                <input id="mflYear" type="number" min="2000" max="2099" step="1" placeholder="2026" />
+              </label>
+              <label class="field">
+                <span>League ID</span>
+                <input id="mflLeague" type="text" inputmode="numeric" placeholder="e.g. 54321" />
+              </label>
+            </div>
+            <div class="row">
+              <button class="btn primary" id="fetchBtn" type="button">Fetch teams</button>
+              <button class="btn ghost" id="manualToggleBtn" type="button">Paste data manually</button>
+            </div>
+            <p id="fetchStatus" class="status" role="status" aria-live="polite"></p>
+
+            <div id="manualBox" class="manual hidden">
+              <p class="small">
+                Browsers block direct calls to MFL (CORS). The reliable way: <strong>open a link,
+                copy everything, paste it below, and load</strong>. The box auto-detects which one it is.
+              </p>
+              <div class="manual-link">
+                <span class="step">1</span>
+                <a id="mflUrl" href="#" target="_blank" rel="noopener">Teams (TYPE=league) ↗</a>
+                <button class="btn tiny" id="copyUrlBtn" type="button">Copy</button>
+              </div>
+              <div class="manual-link">
+                <span class="step">2</span>
+                <a id="mflDraftUrl" href="#" target="_blank" rel="noopener">Draft order &amp; trades (TYPE=draftResults) ↗</a>
+                <button class="btn tiny" id="copyDraftUrlBtn" type="button">Copy</button>
+              </div>
+              <textarea id="manualJson" rows="5" placeholder="Paste either JSON response here, then click Load. Do the teams first, then the draft."></textarea>
+              <button class="btn primary" id="parseManualBtn" type="button">Load pasted data</button>
+            </div>
+          </div>
+
+          <div class="card">
+            <h3>Or start from scratch</h3>
+            <p class="muted small">No MFL? Spin up blank teams and rename them.</p>
+            <label class="field">
+              <span>Number of teams</span>
+              <input id="quickTeams" type="number" min="2" max="32" step="1" value="12" />
+            </label>
+            <button class="btn" id="quickStartBtn" type="button">Create blank teams</button>
+
+            <hr />
+            <h3>Draft format</h3>
+            <div class="row">
+              <label class="field">
+                <span>Rounds</span>
+                <input id="roundsInput" type="number" min="1" max="40" step="1" value="7" />
+              </label>
+              <label class="field checkbox">
+                <input id="snakeInput" type="checkbox" />
+                <span>Snake draft <small class="muted">(reverse even rounds)</small></span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" id="orderCard">
+          <h3>Teams &amp; draft order</h3>
+          <p class="muted small">Drag to reorder, or use the arrows. Row order = round-1 draft order. Click a name to rename.</p>
+          <ol id="orderList" class="order-list"></ol>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ ON THE CLOCK ============ -->
+    <section id="clockSection" class="clock panel">
+      <div class="clock-inner">
+        <div class="clock-now">
+          <div class="clock-pick" id="clockPick">—</div>
+          <div class="clock-meta">
+            <div class="clock-team" id="clockTeam">No pick selected</div>
+            <div class="clock-orig muted small" id="clockOrig"></div>
+          </div>
+        </div>
+        <form id="clockForm" class="clock-form" autocomplete="off">
+          <input id="clockPlayer" type="text" placeholder="Player name…" aria-label="Player name" />
+          <select id="clockPos" aria-label="Position">
+            <option value="">POS</option>
+            <option>QB</option><option>RB</option><option>WR</option><option>TE</option>
+            <option>K</option><option>DEF</option><option value="OTHER">—</option>
+          </select>
+          <input id="clockNfl" type="text" maxlength="4" placeholder="TEAM" aria-label="NFL team" class="nfl-in" />
+          <button class="btn primary" id="clockSubmit" type="submit">Submit pick →</button>
+        </form>
+        <div class="clock-nav">
+          <button class="btn ghost tiny" id="clockPrev" type="button" title="Previous pick">‹ Prev</button>
+          <button class="btn ghost tiny" id="clockUndo" type="button" title="Clear current pick">Clear</button>
+          <button class="btn ghost tiny" id="clockNext" type="button" title="Next pick">Next ›</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ BOARD ============ -->
+    <section id="boardSection">
+      <div class="board-toolbar">
+        <div class="board-title">
+          <h2 id="boardName">Draft Board</h2>
+          <span class="board-progress" id="boardProgress"></span>
+        </div>
+        <div class="board-actions">
+          <button class="btn ghost tiny" id="tradeQuickBtn" type="button">↔ Record trade</button>
+          <button class="btn ghost tiny" id="printBtn" type="button">🖨 Print</button>
+        </div>
+      </div>
+      <div class="board-scroll" id="boardScroll">
+        <table class="board" id="boardTable"></table>
+      </div>
+      <div class="legend" id="legend">
+        <span class="legend-item"><span class="dot traded"></span> Traded pick</span>
+        <span class="legend-item"><span class="dot QB"></span> QB</span>
+        <span class="legend-item"><span class="dot RB"></span> RB</span>
+        <span class="legend-item"><span class="dot WR"></span> WR</span>
+        <span class="legend-item"><span class="dot TE"></span> TE</span>
+        <span class="legend-item"><span class="dot K"></span> K</span>
+        <span class="legend-item"><span class="dot DEF"></span> DEF</span>
+      </div>
+    </section>
+
+    <!-- ============ TRADES ============ -->
+    <section id="tradesSection" class="panel collapsible">
+      <button class="panel-head" id="tradesToggle" type="button" aria-expanded="true">
+        <h2>Draft-day trades <span id="tradeCount" class="pill"></span></h2>
+        <span class="chev">▾</span>
+      </button>
+      <div class="panel-body">
+        <p class="muted small">Reassign a pick to a new team. The board keeps the original owner's row and badges the pick with its new owner.</p>
+        <form id="tradeForm" class="trade-form">
+          <label class="field">
+            <span>Pick</span>
+            <select id="tradePick"></select>
+          </label>
+          <span class="arrow">→</span>
+          <label class="field">
+            <span>New owner</span>
+            <select id="tradeOwner"></select>
+          </label>
+          <button class="btn" id="tradeAddBtn" type="submit">Apply trade</button>
+        </form>
+        <ul id="tradeList" class="trade-list"></ul>
+      </div>
+    </section>
+  </main>
+
+  <!-- ============ PICK EDIT MODAL ============ -->
+  <dialog id="pickModal" class="modal">
+    <form method="dialog" id="pickForm">
+      <header class="modal-head">
+        <h3 id="modalTitle">Edit pick</h3>
+        <button class="icon-btn" id="modalClose" type="button" aria-label="Close">✕</button>
+      </header>
+      <div class="modal-body">
+        <p class="muted small" id="modalSub"></p>
+        <label class="field">
+          <span>Player</span>
+          <input id="mPlayer" type="text" placeholder="Player name" />
+        </label>
+        <div class="row">
+          <label class="field">
+            <span>Position</span>
+            <select id="mPos">
+              <option value="">—</option>
+              <option>QB</option><option>RB</option><option>WR</option><option>TE</option>
+              <option>K</option><option>DEF</option><option value="OTHER">Other</option>
+            </select>
+          </label>
+          <label class="field">
+            <span>NFL team</span>
+            <input id="mNfl" type="text" maxlength="4" placeholder="DAL" />
+          </label>
+        </div>
+        <label class="field">
+          <span>Current owner (for traded picks)</span>
+          <select id="mOwner"></select>
+        </label>
+      </div>
+      <footer class="modal-foot">
+        <button class="btn ghost" id="mClear" type="button">Clear pick</button>
+        <div class="spacer"></div>
+        <button class="btn" id="mCancel" type="button">Cancel</button>
+        <button class="btn primary" id="mSave" type="button">Save</button>
+      </footer>
+    </form>
+  </dialog>
+
+  <!-- ============ SETTINGS MODAL ============ -->
+  <dialog id="settingsModal" class="modal">
+    <div class="modal-inner">
+      <header class="modal-head">
+        <h3>Settings &amp; data</h3>
+        <button class="icon-btn" id="settingsClose" type="button" aria-label="Close">✕</button>
+      </header>
+      <div class="modal-body">
+        <label class="field">
+          <span>Auto-fetch CORS proxy <small class="muted">(best effort)</small></span>
+          <input id="proxyInput" type="text" placeholder="https://your-proxy/?url=" />
+          <small class="muted">Optional. Use <code>{url}</code> as a placeholder, or end with <code>?url=</code>. Manual paste always works without this.</small>
+        </label>
+        <hr />
+        <h4>This board</h4>
+        <div class="row wrap">
+          <button class="btn ghost tiny" id="exportBtn" type="button">⬇ Export JSON</button>
+          <button class="btn ghost tiny" id="importBtn" type="button">⬆ Import JSON</button>
+          <button class="btn ghost tiny" id="renameBoardBtn" type="button">✎ Rename</button>
+          <button class="btn danger tiny" id="deleteBoardBtn" type="button">🗑 Delete board</button>
+        </div>
+        <input id="importFile" type="file" accept="application/json,.json" class="hidden" />
+      </div>
+      <footer class="modal-foot">
+        <div class="spacer"></div>
+        <button class="btn primary" id="settingsDone" type="button">Done</button>
+      </footer>
+    </div>
+  </dialog>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
