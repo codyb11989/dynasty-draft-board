@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Dynasty Draft Board</title>
-  <meta name="description" content="A live fantasy football draft board that pulls your league from MyFantasyLeague and runs entirely in your browser." />
+  <title>Loyal Order of Water Buffaloes — Draft Board</title>
+  <meta name="description" content="Live rookie draft board for the Loyal Order of Water Buffaloes, pulled from MyFantasyLeague." />
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏈</text></svg>" />
   <link rel="stylesheet" href="styles.css" />
 </head>
@@ -13,120 +13,25 @@
     <div class="brand">
       <span class="brand-mark">🏈</span>
       <div>
-        <div class="brand-title">Dynasty Draft Board</div>
-        <div class="brand-sub" id="brandSub">Pull your MyFantasyLeague teams · draft locally</div>
+        <div class="brand-title" id="brandTitle">Loyal Order of Water Buffaloes</div>
+        <div class="brand-sub" id="brandSub">2026 Rookie Draft</div>
       </div>
     </div>
     <div class="header-controls">
-      <label class="field inline">
-        <span>Board</span>
-        <select id="boardSelect" aria-label="Select board"></select>
-      </label>
-      <button class="btn ghost" id="newBoardBtn" type="button">+ New board</button>
-      <button class="btn ghost" id="settingsBtn" type="button" title="Settings &amp; data">⚙</button>
+      <span class="live-pill" id="livePill" title="Live status"><span class="live-dot"></span><span id="liveText">Local</span></span>
+      <button class="btn ghost" id="fullscreenBtn" type="button" title="Full-screen the board">⛶ Full screen</button>
+      <button class="btn ghost" id="settingsBtn" type="button" title="Update data &amp; settings">⚙ Update / Settings</button>
     </div>
   </header>
 
   <main id="main">
-    <!-- ============ EMPTY STATE ============ -->
-    <section id="emptyState" class="empty hidden">
-      <div class="empty-card">
-        <h1>Build your draft board</h1>
-        <p>Pull your league's teams straight from MyFantasyLeague, then run your draft right here — picks and draft-day trades are saved in your browser. Nothing leaves your device.</p>
-        <div class="empty-actions">
-          <button class="btn primary lg" id="loadMineBtn" type="button">⚡ Load my league — Loyal Order of Water Buffaloes</button>
-          <button class="btn lg" id="emptyCreateBtn" type="button">Set up a different league</button>
-        </div>
-        <p class="muted small" id="loadMineNote">One-click loads your 10-team board with the draft order and 8 existing trades already in place.</p>
-      </div>
-    </section>
-
-    <!-- ============ SETUP / IMPORT ============ -->
-    <section id="setupSection" class="panel collapsible">
-      <button class="panel-head" id="setupToggle" type="button" aria-expanded="true">
-        <h2>1 · League setup</h2>
-        <span class="chev">▾</span>
-      </button>
-      <div class="panel-body" id="setupBody">
-        <div class="grid-2">
-          <div class="card">
-            <h3>Import from MyFantasyLeague</h3>
-            <p class="muted small">Enter your season &amp; league ID. We'll grab your team names automatically.</p>
-            <div class="row">
-              <label class="field">
-                <span>Season</span>
-                <input id="mflYear" type="number" min="2000" max="2099" step="1" placeholder="2026" />
-              </label>
-              <label class="field">
-                <span>League ID</span>
-                <input id="mflLeague" type="text" inputmode="numeric" placeholder="e.g. 54321" />
-              </label>
-            </div>
-            <div class="row">
-              <button class="btn primary" id="fetchBtn" type="button">Fetch teams</button>
-              <button class="btn ghost" id="manualToggleBtn" type="button">Paste data manually</button>
-            </div>
-            <p id="fetchStatus" class="status" role="status" aria-live="polite"></p>
-
-            <div id="manualBox" class="manual hidden">
-              <p class="small">
-                Browsers block direct calls to MFL (CORS). The reliable way: <strong>open a link,
-                copy everything, paste it below, and load</strong>. The box auto-detects which one it is.
-              </p>
-              <div class="manual-link">
-                <span class="step">1</span>
-                <a id="mflUrl" href="#" target="_blank" rel="noopener">Teams (TYPE=league) ↗</a>
-                <button class="btn tiny" id="copyUrlBtn" type="button">Copy</button>
-              </div>
-              <div class="manual-link">
-                <span class="step">2</span>
-                <a id="mflDraftUrl" href="#" target="_blank" rel="noopener">Draft order &amp; trades (TYPE=draftResults) ↗</a>
-                <button class="btn tiny" id="copyDraftUrlBtn" type="button">Copy</button>
-              </div>
-              <textarea id="manualJson" rows="5" placeholder="Paste either JSON response here, then click Load. Do the teams first, then the draft."></textarea>
-              <button class="btn primary" id="parseManualBtn" type="button">Load pasted data</button>
-            </div>
-          </div>
-
-          <div class="card">
-            <h3>Or start from scratch</h3>
-            <p class="muted small">No MFL? Spin up blank teams and rename them.</p>
-            <label class="field">
-              <span>Number of teams</span>
-              <input id="quickTeams" type="number" min="2" max="32" step="1" value="12" />
-            </label>
-            <button class="btn" id="quickStartBtn" type="button">Create blank teams</button>
-
-            <hr />
-            <h3>Draft format</h3>
-            <div class="row">
-              <label class="field">
-                <span>Rounds</span>
-                <input id="roundsInput" type="number" min="1" max="40" step="1" value="7" />
-              </label>
-              <label class="field checkbox">
-                <input id="snakeInput" type="checkbox" />
-                <span>Snake draft <small class="muted">(reverse even rounds)</small></span>
-              </label>
-            </div>
-          </div>
-        </div>
-
-        <div class="card" id="orderCard">
-          <h3>Teams &amp; draft order</h3>
-          <p class="muted small">Drag to reorder, or use the arrows. Row order = round-1 draft order. Click a name to rename.</p>
-          <ol id="orderList" class="order-list"></ol>
-        </div>
-      </div>
-    </section>
-
     <!-- ============ ON THE CLOCK ============ -->
-    <section id="clockSection" class="clock panel">
+    <section id="clockSection" class="clock panel editor-only">
       <div class="clock-inner">
         <div class="clock-now">
           <div class="clock-pick" id="clockPick">—</div>
           <div class="clock-meta">
-            <div class="clock-team" id="clockTeam">No pick selected</div>
+            <div class="clock-team" id="clockTeam">—</div>
             <div class="clock-orig muted small" id="clockOrig"></div>
           </div>
         </div>
@@ -158,7 +63,8 @@
           <span class="board-progress" id="boardProgress"></span>
         </div>
         <div class="board-actions">
-          <button class="btn ghost tiny" id="tradeQuickBtn" type="button">↔ Record trade</button>
+          <button class="btn ghost tiny editor-only" id="tradeQuickBtn" type="button">↔ Record trade</button>
+          <button class="btn ghost tiny" id="fullscreenBtn2" type="button">⛶ Full screen</button>
           <button class="btn ghost tiny" id="printBtn" type="button">🖨 Print</button>
         </div>
       </div>
@@ -176,14 +82,14 @@
       </div>
     </section>
 
-    <!-- ============ TRADES ============ -->
-    <section id="tradesSection" class="panel collapsible">
+    <!-- ============ TRADES (manual draft-day entry) ============ -->
+    <section id="tradesSection" class="panel collapsible editor-only">
       <button class="panel-head" id="tradesToggle" type="button" aria-expanded="true">
         <h2>Draft-day trades <span id="tradeCount" class="pill"></span></h2>
         <span class="chev">▾</span>
       </button>
       <div class="panel-body">
-        <p class="muted small">Reassign a pick to a new team. The board keeps the original owner's row and badges the pick with its new owner.</p>
+        <p class="muted small">Reassign a pick to a new team. The board keeps the original owner's row and badges the pick with its new owner. (Trades you pull from MyFantasyLeague show up here automatically.)</p>
         <form id="tradeForm" class="trade-form">
           <label class="field">
             <span>Pick</span>
@@ -243,40 +149,106 @@
     </form>
   </dialog>
 
-  <!-- ============ SETTINGS MODAL ============ -->
-  <dialog id="settingsModal" class="modal">
+  <!-- ============ SETTINGS / UPDATE MODAL ============ -->
+  <dialog id="settingsModal" class="modal wide">
     <div class="modal-inner">
       <header class="modal-head">
-        <h3>Settings &amp; data</h3>
+        <h3>Update data &amp; settings</h3>
         <button class="icon-btn" id="settingsClose" type="button" aria-label="Close">✕</button>
       </header>
-      <div class="modal-body">
-        <label class="field">
-          <span>Auto-fetch CORS proxy <small class="muted">(best effort)</small></span>
-          <input id="proxyInput" type="text" placeholder="https://your-proxy/?url=" />
-          <small class="muted">Optional. Use <code>{url}</code> as a placeholder, or end with <code>?url=</code>. Manual paste always works without this.</small>
-        </label>
-        <hr />
-        <h4>Rookie pool</h4>
-        <p class="muted small" id="poolStatus">No rookie list loaded.</p>
-        <div class="row wrap">
-          <button class="btn ghost tiny" id="reloadPoolBtn" type="button">↻ Reload bundled rookies</button>
-          <button class="btn ghost tiny" id="pastePoolBtn" type="button">⬆ Paste MFL players</button>
-        </div>
-        <div id="poolPasteBox" class="hidden" style="margin-top:8px;">
-          <p class="small muted">Open <a id="poolUrl" href="#" target="_blank" rel="noopener">TYPE=players&amp;DETAILS=1</a>, paste the JSON, then Load. Rookies are filtered by this board's season.</p>
-          <textarea id="poolJson" rows="4" placeholder="Paste the TYPE=players JSON here…"></textarea>
-          <button class="btn primary tiny" id="loadPoolBtn" type="button">Load players</button>
-        </div>
-        <hr />
-        <h4>This board</h4>
-        <div class="row wrap">
-          <button class="btn ghost tiny" id="exportBtn" type="button">⬇ Export JSON</button>
-          <button class="btn ghost tiny" id="importBtn" type="button">⬆ Import JSON</button>
-          <button class="btn ghost tiny" id="renameBoardBtn" type="button">✎ Rename</button>
-          <button class="btn danger tiny" id="deleteBoardBtn" type="button">🗑 Delete board</button>
-        </div>
-        <input id="importFile" type="file" accept="application/json,.json" class="hidden" />
+      <div class="modal-body scroll">
+
+        <!-- A. Update from MFL -->
+        <section class="set-block">
+          <h4>① Update from MyFantasyLeague</h4>
+          <p class="muted small">
+            Browsers can't read MFL directly (CORS), so do it by hand — it takes seconds.
+            For each item: <strong>Open</strong> (opens the raw data in a new tab) → select all &amp; copy →
+            paste into the box below → <strong>Load</strong>. The box figures out what you pasted.
+          </p>
+          <div class="link-rows">
+            <div class="link-row">
+              <span class="step">1</span>
+              <span class="link-label">Teams</span>
+              <a class="btn tiny" id="urlTeams" href="#" target="_blank" rel="noopener">Open ↗</a>
+              <button class="btn tiny ghost" data-copy="urlTeams" type="button">Copy URL</button>
+            </div>
+            <div class="link-row">
+              <span class="step">2</span>
+              <span class="link-label">Draft order, trades &amp; picks</span>
+              <a class="btn tiny" id="urlDraft" href="#" target="_blank" rel="noopener">Open ↗</a>
+              <button class="btn tiny ghost" data-copy="urlDraft" type="button">Copy URL</button>
+            </div>
+            <div class="link-row">
+              <span class="step">3</span>
+              <span class="link-label">Rookie player pool</span>
+              <a class="btn tiny" id="urlRookies" href="#" target="_blank" rel="noopener">Open ↗</a>
+              <button class="btn tiny ghost" data-copy="urlRookies" type="button">Copy URL</button>
+            </div>
+          </div>
+          <textarea id="importJson" rows="4" placeholder="Paste the copied JSON here, then click Load…"></textarea>
+          <div class="row wrap">
+            <button class="btn primary" id="importLoadBtn" type="button">Load pasted data</button>
+            <span class="status" id="importStatus" role="status" aria-live="polite"></span>
+          </div>
+        </section>
+
+        <!-- B. Live sharing -->
+        <section class="set-block">
+          <h4>② Live board for other viewers</h4>
+          <p class="muted small">
+            Same-screen tabs/windows update instantly on their own. To let people on
+            <em>other devices</em> watch, publish a snapshot and commit it to the repo —
+            their boards auto-refresh from it.
+          </p>
+          <div class="row wrap">
+            <button class="btn" id="publishBtn" type="button">⬇ Publish snapshot (board-state.json)</button>
+            <label class="field checkbox inline">
+              <input id="autoRefreshToggle" type="checkbox" checked />
+              <span>Auto-refresh from published board</span>
+            </label>
+          </div>
+          <p class="muted small" id="liveInfo"></p>
+          <details class="howto">
+            <summary>How to publish (one time setup, then one commit per update)</summary>
+            <ol class="howto-list">
+              <li>Click <strong>Publish snapshot</strong> — it downloads <code>board-state.json</code>.</li>
+              <li>Drop that file into the repo root (replace the old one) and commit/push:
+                <code>git add board-state.json &amp;&amp; git commit -m "update board" &amp;&amp; git push</code></li>
+              <li>GitHub Pages redeploys in ~1 min; every open board polls and updates itself.</li>
+            </ol>
+          </details>
+        </section>
+
+        <!-- C. Teams & draft order (advanced) -->
+        <section class="set-block">
+          <details>
+            <summary><h4 style="display:inline">③ Teams, order &amp; format (manual)</h4></summary>
+            <div class="row">
+              <label class="field">
+                <span>Rounds</span>
+                <input id="roundsInput" type="number" min="1" max="40" step="1" value="7" />
+              </label>
+              <label class="field checkbox">
+                <input id="snakeInput" type="checkbox" />
+                <span>Snake draft <small class="muted">(reverse even rounds)</small></span>
+              </label>
+            </div>
+            <p class="muted small">Row order = round-1 draft order. Drag or use arrows; click a name to rename.</p>
+            <ol id="orderList" class="order-list"></ol>
+          </details>
+        </section>
+
+        <!-- D. Backup -->
+        <section class="set-block">
+          <h4>④ Backup &amp; reset</h4>
+          <div class="row wrap">
+            <button class="btn ghost tiny" id="exportBtn" type="button">⬇ Export board JSON</button>
+            <button class="btn ghost tiny" id="importBtn" type="button">⬆ Import board JSON</button>
+            <button class="btn danger tiny" id="resetBtn" type="button">↺ Reset to league defaults</button>
+          </div>
+          <input id="importFile" type="file" accept="application/json,.json" class="hidden" />
+        </section>
       </div>
       <footer class="modal-foot">
         <div class="spacer"></div>

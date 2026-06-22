@@ -275,6 +275,41 @@ td.cell { padding: 0; min-width: 150px; height: 62px; vertical-align: stretch; }
 .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 .toast.err { border-color: #5a2730; color: #ffb3b3; }
 
+/* ---------- Live pill ---------- */
+.live-pill { display: inline-flex; align-items: center; gap: 6px; font-size: .74rem; font-weight: 700; color: var(--muted); border: 1px solid var(--line); border-radius: 20px; padding: 3px 10px; }
+.live-pill .live-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
+.live-pill.on { color: var(--accent); border-color: rgba(74,222,128,.4); }
+.live-pill.on .live-dot { background: var(--accent); box-shadow: 0 0 0 3px rgba(74,222,128,.18); animation: pulse 2s infinite; }
+@keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .35; } }
+
+/* ---------- Settings sections ---------- */
+.modal.wide { width: min(680px, 94vw); }
+.modal-body.scroll { max-height: 76vh; overflow: auto; }
+.set-block { padding: 6px 0 16px; border-bottom: 1px solid var(--line); margin-bottom: 6px; }
+.set-block:last-child { border-bottom: none; }
+.set-block h4 { font-size: .95rem; margin-bottom: 8px; }
+.set-block details > summary { cursor: pointer; list-style: revert; }
+.set-block details summary h4 { display: inline; margin: 0; }
+.link-rows { display: flex; flex-direction: column; gap: 8px; margin: 10px 0; }
+.link-row { display: flex; align-items: center; gap: 10px; background: var(--bg-2); border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 7px 10px; }
+.link-row .step { flex: none; width: 20px; height: 20px; border-radius: 50%; background: var(--accent); color: #06200f; font-size: .72rem; font-weight: 800; display: inline-flex; align-items: center; justify-content: center; }
+.link-label { flex: 1; font-weight: 600; font-size: .86rem; }
+.field.checkbox.inline { flex-direction: row; align-items: center; }
+.howto { margin-top: 10px; font-size: .82rem; }
+.howto summary { cursor: pointer; color: var(--muted); font-weight: 600; }
+.howto-list { margin: 10px 0 0; padding-left: 18px; color: var(--muted); display: flex; flex-direction: column; gap: 8px; }
+.howto-list code { word-break: break-all; }
+
+/* ---------- Full-screen / focus mode ---------- */
+body.board-focus { overflow: hidden; }
+body.board-focus .app-header,
+body.board-focus #clockSection,
+body.board-focus #tradesSection { display: none !important; }
+body.board-focus main { padding: 0; max-width: none; gap: 0; }
+body.board-focus #boardSection { position: fixed; inset: 0; z-index: 60; background: var(--bg); padding: 10px 14px; display: flex; flex-direction: column; gap: 8px; }
+body.board-focus .board-scroll { max-height: none; flex: 1; }
+body.board-focus .legend { padding-bottom: 4px; }
+
 /* ---------- Print ---------- */
 @media print {
   body { background: #fff; color: #000; }

@@ -1,97 +1,83 @@
-# 🏈 Dynasty Draft Board
+# 🏈 Loyal Order of Water Buffaloes — Draft Board
 
-A live fantasy-football draft board that pulls your league's teams from
-**MyFantasyLeague**, then lets a single user run the draft — entering picks and
-draft-day trades — right in the browser. Everything is saved to your browser's
-`localStorage`, so it works on **GitHub Pages** with no backend and no database.
+A live rookie-draft board for one MyFantasyLeague league (**Loyal Order of Water
+Buffaloes**, league `21931`, 2026). It runs entirely in the browser — no backend —
+so it lives happily on **GitHub Pages**, with state in `localStorage`.
 
-![board](https://img.shields.io/badge/runs-100%25%20client--side-4ade80) ![storage](https://img.shields.io/badge/data-localStorage-3b82f6)
+**Live:** https://codyb11989.github.io/dynasty-draft-board/
 
-## Features
+![client side](https://img.shields.io/badge/runs-100%25%20client--side-4ade80) ![storage](https://img.shields.io/badge/data-localStorage-3b82f6)
 
-- **Pull your league from MyFantasyLeague** — enter your season + league ID and
-  it grabs every team name, the full draft order, the number of rounds, and any
-  picks already traded (`TYPE=league` + `TYPE=draftResults`). Snake vs. linear is
-  auto-detected.
-- **Clean board** — one row per team, all 7 rounds across the top (configurable).
-  Sticky team column + round headers so big leagues scroll smoothly.
-- **On-the-clock entry** — a fast input bar shows the current pick and team;
-  type the player, hit Enter, and it advances to the next pick automatically.
-- **Rookie autocomplete** — the player box suggests from the bundled 2026 rookie
-  class (`rookies-2026.json`, pulled from MFL); picking a name auto-fills position
-  and NFL team, and drafted players drop off the available list. Anyone missing?
-  Just type their name — free text always works. Refresh/replace the pool under
-  **⚙ Settings → Rookie pool**.
-- **Draft-day trades** — reassign any pick to a new owner. The board keeps the
-  original team's row and badges the pick with its new owner, so traded picks
-  are obvious at a glance.
-- **Snake or linear** drafts, position color-coding, and a clean **print** view.
-- **Multiple boards** — keep a separate board per league/season.
-- **Export / import** a board as JSON for backup or sharing.
+## What it does
 
-## A note on CORS (important)
+- **Pre-loaded with the league** — all 10 teams, the draft order, and the trades
+  that already exist are baked in. Open it and start.
+- **On-the-clock entry** — shows the current pick + team; type the player, hit
+  Enter, it advances. Picks autocomplete from the **2026 rookie class** (with
+  position + NFL team auto-filled); anyone missing? Just type the name.
+- **Clean board** — one row per team, all 7 rounds, sticky headers, position
+  color-coding (incl. IDP), and traded picks badged with their new owner.
+- **Full-screen mode** — one click blows the board up to fill the screen for
+  watching/projecting (button in the header or board toolbar; `Esc` exits).
+- **Live for viewers** — see *Live sharing* below.
+- All updates are made under **⚙ Update / Settings** — the main page is just the board.
 
-Browsers block direct calls from your site to the MFL API (MFL only allows its
-own domain). This app handles it two ways:
+## Keeping it up to date (CORS-friendly, no auto-fetch)
 
-1. **Paste data manually (always works):** click **Paste data manually**. It
-   shows two links — **(1) Teams** and **(2) Draft order & trades**. Open each,
-   copy the JSON, and paste it into the box (it auto-detects which is which). Do
-   teams first, then the draft. No third party involved — data stays in your browser.
-2. **Auto-fetch (best effort):** the app will try a public CORS proxy. These are
-   frequently rate-limited, so if it fails, just use the manual paste. You can
-   set your own proxy under **⚙ Settings** (use `{url}` as the placeholder).
+Browsers can't call MFL directly (CORS), so updates are a quick copy-paste.
+Open **⚙ Update / Settings → ① Update from MyFantasyLeague**. For each item there's
+an **Open ↗** button (opens the raw JSON in a new tab) and a **Copy URL** button:
 
-You can also skip MFL entirely with **Start from scratch** → blank teams to rename.
+1. **Teams** — `TYPE=league` → team names.
+2. **Draft order, trades & picks** — `TYPE=draftResults` → the draft order, every
+   traded pick, **and which players have been drafted** (IDs are matched to the
+   rookie pool, so the board fills in real names/positions/teams).
+3. **Rookie pool** — `TYPE=players&DETAILS=1` → refreshes the rookie autocomplete.
 
-### Pre-built board for "Loyal Order of Water Buffaloes" (league 21931)
+Open → select-all → copy → paste into the one box → **Load**. The box auto-detects
+which of the three you pasted. During the draft, re-pasting **draftResults** is the
+one-step way to bring the whole board current.
 
-`loyal-order-2026.json` is your league baked into a board file — 10 teams, linear
-7-round order, and the 8 traded picks that existed when it was generated. Load it
-in one step: **⚙ → Import JSON → pick that file**. To refresh trades later, re-run
-the manual import step 2 (paste the latest `draftResults`); MFL is the source of truth.
+## Live sharing (auto-update for other viewers)
+
+This is a static site with no backend, so it shares live state two ways:
+
+- **Same machine, instantly:** open the board in multiple tabs/windows (e.g. a
+  laptop + a projector) — they sync automatically via the browser `storage` event.
+- **Other devices:** the board polls a same-origin **`board-state.json`** every 15s
+  and refreshes when it changes. To publish an update for watchers:
+  1. **⚙ → ② Live board → Publish snapshot** — downloads `board-state.json`.
+  2. Drop it in the repo root (replace the old one) and push:
+     `git add board-state.json && git commit -m "update board" && git push`
+  3. Pages redeploys (~1 min) and every open board updates itself. The header pill
+     shows **Live** when a published snapshot is being watched.
+
+  Newest-wins: your in-progress local picks are never clobbered by an older
+  snapshot, and viewers always move forward to the latest published one.
+
+## Updating the rookie list (`rookies-2026.json`)
+
+Bundled and pulled from MFL. To refresh it (e.g. post-NFL-draft team changes):
+**⚙ → ① → Rookie pool → Open**, copy, paste, Load — or regenerate the file from a
+`TYPE=players&DETAILS=1` export and commit it.
 
 ## Run locally
 
-It's just static files — open `index.html`, or serve the folder:
+Static files — serve the folder (the rookie list and live-sync use `fetch`, which
+needs a server, not `file://`):
 
 ```bash
-# Python
-python -m http.server 8000
-# or Node
-npx serve .
+python -m http.server 8000   # then open http://localhost:8000
 ```
 
-Then visit `http://localhost:8000`.
+## Deploy
 
-## Deploy to GitHub Pages
-
-1. Create a repo and push these files (`index.html`, `styles.css`, `app.js`,
-   `.nojekyll`) to the `main` branch.
-   ```bash
-   git init && git add . && git commit -m "Dynasty draft board"
-   git branch -M main
-   git remote add origin https://github.com/<you>/<repo>.git
-   git push -u origin main
-   ```
-2. On GitHub: **Settings → Pages → Build and deployment**, set
-   **Source = Deploy from a branch**, **Branch = `main` / `(root)`**, Save.
-3. Your board is live at `https://<you>.github.io/<repo>/` in a minute or two.
-
-The `.nojekyll` file tells Pages to serve the files as-is (no Jekyll processing).
-
-## How to run a draft
-
-1. **League setup** → enter season + league ID → **Fetch teams** (or paste, or
-   start from scratch). Set rounds and snake on/off.
-2. Drag the team list into your draft order (row order = round-1 order).
-3. As the draft runs, use the **on-the-clock bar**: type the player → Enter.
-   Or click any cell on the board to edit it directly.
-4. For a **trade**, click **↔ Record trade** (or the pick on the board) and pick
-   the new owner. The traded pick gets a `→ NewOwner` badge.
-5. Hit **🖨 Print** for a clean, shareable board.
+Already wired: pushing to `main` triggers `.github/workflows/deploy.yml`, which
+publishes to GitHub Pages. (Pages must be enabled once: **Settings → Pages →
+Source → GitHub Actions**.)
 
 ## Data & privacy
 
-Everything lives in `localStorage` under the key `ddb.state.v1` on your device.
-Clearing browser data wipes it — use **⚙ → Export JSON** to back up a board.
+Everything is in `localStorage` (key `ddb.state.v2`) on each device. **⚙ → ④ Backup**
+exports/imports the board JSON or resets to league defaults. The committed
+`board-state.json` is the only shared/published copy.
