@@ -1,19 +1,16 @@
 /* ============================================================
    Loyal Order of Water Buffaloes — Draft Board
    Single league. 100% client-side. No build step.
-   Persists to localStorage; optional live sync via a published
-   board-state.json polled from the same origin.
+   Persists to localStorage; syncs across tabs on the same device.
    ============================================================ */
 (() => {
   'use strict';
 
   const STORE_KEY = 'ddb.state.v2';
   const OLD_KEY = 'ddb.state.v1';
-  const PUBLISHED = 'board-state.json';
-  const POLL_MS = 15000;
 
   // The one league this board is for. Acts as the offline default; any data
-  // you pull from MFL or a published snapshot overrides it.
+  // you pull from MFL overrides it.
   const LEAGUE = {
     name: 'Loyal Order of Water Buffaloes',
     year: 2026,
@@ -46,7 +43,6 @@
 
   // ---------- state ----------
   let state = loadState();
-  let publishedSeen = false;
 
   function defaultBoard() {
     return {
@@ -55,7 +51,7 @@
       order: LEAGUE.order.slice(),
       rounds: LEAGUE.rounds, snake: LEAGUE.snake,
       picks: {}, owners: { ...LEAGUE.owners },
-      cursor: 1, updatedAt: 0, // 0 so any published snapshot wins for fresh visitors
+      cursor: 1, updatedAt: 0,
     };
   }
   function loadState() {
@@ -75,7 +71,7 @@
   }
   function normalizeState(s) {
     s = s || {};
-    s.settings = Object.assign({ autoRefresh: true }, s.settings || {});
+    s.settings = s.settings || {};
     s.refData = s.refData || {};
     s.refData.rookies = s.refData.rookies || {};
     s.board = normalizeBoard(s.board);
@@ -292,33 +288,29 @@
     return '';
   }
 
-  // ---------- NFL team helmets (self-contained SVG, tinted per team) ----------
-  // [shell color, stripe/accent color], keyed by MFL team code.
-  const TEAM_COLORS = {
-    ARI: ['#97233F', '#FFB612'], ATL: ['#A71930', '#111111'], BAL: ['#241773', '#9E7C0C'],
-    BUF: ['#00338D', '#C60C30'], CAR: ['#0085CA', '#101820'], CHI: ['#0B162A', '#C83803'],
-    CIN: ['#FB4F14', '#111111'], CLE: ['#3a2400', '#FF3C00'], DAL: ['#041E42', '#869397'],
-    DEN: ['#FB4F14', '#002244'], DET: ['#0076B6', '#B0B7BC'], GBP: ['#203731', '#FFB612'],
-    HOU: ['#03202F', '#A71930'], IND: ['#002C5F', '#A2AAAD'], JAC: ['#006778', '#D7A22A'],
-    KCC: ['#E31837', '#FFB81C'], LAC: ['#0080C6', '#FFC20E'], LAR: ['#003594', '#FFA300'],
-    LVR: ['#11151a', '#A5ACAF'], MIA: ['#008E97', '#FC4C02'], MIN: ['#4F2683', '#FFC62F'],
-    NEP: ['#002244', '#C60C30'], NOS: ['#9F8958', '#101820'], NYG: ['#0B2265', '#A71930'],
-    NYJ: ['#125740', '#E8E8E8'], PHI: ['#004C54', '#A5ACAF'], PIT: ['#1a1d22', '#FFB612'],
-    SEA: ['#002244', '#69BE28'], SFO: ['#AA0000', '#B3995D'], TBB: ['#D50A0A', '#3b3530'],
-    TEN: ['#0C2340', '#4B92DB'], WAS: ['#5A1414', '#FFB612'],
+  // ---------- NFL team helmets (real images in assets/helmets/, keyed by MFL team code) ----------
+  // Canonical MFL codes that have a helmet image on disk.
+  const HELMET_CODES = new Set([
+    'ARI', 'ATL', 'BAL', 'BUF', 'CAR', 'CHI', 'CIN', 'CLE', 'DAL', 'DEN', 'DET', 'GBP',
+    'HOU', 'IND', 'JAC', 'KCC', 'LAC', 'LAR', 'LVR', 'MIA', 'MIN', 'NEP', 'NOS', 'NYG',
+    'NYJ', 'PHI', 'PIT', 'SEA', 'SFO', 'TBB', 'TEN', 'WAS',
+  ]);
+  // Common alternate abbreviations (ESPN / nflverse / typed) -> the MFL code we store the file under.
+  const HELMET_ALIAS = {
+    GB: 'GBP', GNB: 'GBP', KC: 'KCC', KAN: 'KCC', NE: 'NEP', NWE: 'NEP', NO: 'NOS', NOR: 'NOS',
+    SF: 'SFO', SAN: 'SFO', TB: 'TBB', TAM: 'TBB', LV: 'LVR', OAK: 'LVR', RAI: 'LVR',
+    LA: 'LAR', RAM: 'LAR', STL: 'LAR', SD: 'LAC', SDC: 'LAC', JAX: 'JAC', JAG: 'JAC',
+    WSH: 'WAS', WFT: 'WAS', ARZ: 'ARI', CLV: 'CLE', HST: 'HOU', BLT: 'BAL',
   };
+  function helmetCode(team) {
+    const t = (team || '').toUpperCase().trim();
+    if (HELMET_CODES.has(t)) return t;
+    return HELMET_ALIAS[t] || null;
+  }
   function helmet(team) {
-    const [p, s] = TEAM_COLORS[(team || '').toUpperCase()] || ['#3a4456', '#aab2c0'];
-    return `<svg class="helmet" viewBox="0 0 64 52" aria-hidden="true" focusable="false">
-      <path fill="${p}" d="M30 5C16 5 5 15 5 28c0 9 5 16 15 17 5 1 10-1 13-4l-3-6c-4 2-9 1-12-3-5-7-1-16 9-18 12-2 24 3 28 14 2-5 1-13-4-16C46 6 38 5 30 5Z"/>
-      <path fill="${p}" d="M33 38c11 1 19-3 23-11 4 6 1 17-9 20-7 2-13-1-14-6Z"/>
-      <path fill="${s}" d="M22 7c8-3 20-2 28 4l-4 4c-7-5-16-6-22-3Z"/>
-      <g stroke="#d6dae0" stroke-width="2.3" fill="none" stroke-linecap="round">
-        <path d="M34 35c11 0 19 3 21 9"/>
-        <path d="M35 41c9 1 15 3 17 6"/>
-      </g>
-      <circle cx="24" cy="28" r="3.3" fill="#00000055"/>
-    </svg>`;
+    const code = helmetCode(team);
+    if (!code) return '';
+    return `<img class="helmet" src="assets/helmets/${code}.png" alt="${esc(code)}" decoding="async" />`;
   }
 
   // ============================================================
@@ -334,7 +326,6 @@
     renderTrades(b);
     renderOrder(b);
     renderRookieDatalist(b);
-    renderLive();
     if (!rookiesFor(b.year)) ensureRookies(b.year).then((l) => { if (l) renderRookieDatalist(b); });
   }
 
@@ -383,7 +374,7 @@
                 <span class="player">${esc(pick.player)}</span>
                 ${sub ? `<span class="sub">${esc(sub)}</span>` : ''}
               </div></div>${badge}`
-          : `<span class="player">Add pick</span>`;
+          : `<span class="player">Add pick</span>${badge}`;
         body += `<td class="cell"><div class="${cls}" data-key="${key}" data-round="${r}" data-slot="${slot}" tabindex="0" role="button">
             <span class="pick-no" title="Overall #${overall}">${r}.${pad2(pir)}</span>${inner}
           </div></td>`;
@@ -418,17 +409,6 @@
         <span class="order-arrows"><button type="button" data-act="up" title="Up">▲</button><button type="button" data-act="down" title="Down">▼</button></span>
       </li>`;
     }).join('');
-  }
-
-  function renderLive() {
-    const pill = $('#livePill'), txt = $('#liveText');
-    const on = state.settings.autoRefresh && publishedSeen;
-    pill.classList.toggle('on', on);
-    txt.textContent = on ? 'Live' : (state.settings.autoRefresh ? 'Local' : 'Paused');
-    const info = $('#liveInfo');
-    if (info) info.textContent = publishedSeen
-      ? 'A published snapshot is live — viewers auto-refresh from it.'
-      : 'No published snapshot found yet. Publish one to let other devices watch.';
   }
 
   // ============================================================
@@ -538,34 +518,11 @@
   }
 
   // ============================================================
-  //  Live sync: cross-tab + published-file polling
+  //  Cross-tab sync (same device) + file download helper
   // ============================================================
-  let pollTimer = null;
-  function startPolling() { stopPolling(); pollOnce(); pollTimer = setInterval(pollOnce, POLL_MS); }
-  function stopPolling() { if (pollTimer) clearInterval(pollTimer); pollTimer = null; }
-  async function pollOnce() {
-    if (!state.settings.autoRefresh) return;
-    try {
-      const res = await fetch(`${PUBLISHED}?t=${Date.now()}`, { cache: 'no-store' });
-      if (!res.ok) { if (publishedSeen) { publishedSeen = false; renderLive(); } return; }
-      const snap = await res.json();
-      publishedSeen = true;
-      if (snap && typeof snap.updatedAt === 'number' && snap.updatedAt > (state.board.updatedAt || 0)) {
-        state.board = normalizeBoard(snap); save(); renderAll();
-        toast('Board updated from published snapshot');
-      } else { renderLive(); }
-    } catch (e) { if (publishedSeen) { publishedSeen = false; renderLive(); } }
-  }
   function onStorage(e) {
     if (e.key !== STORE_KEY || !e.newValue) return;
     try { state = normalizeState(JSON.parse(e.newValue)); renderAll(); } catch (err) { /* ignore */ }
-  }
-  function onPublish() {
-    const b = board();
-    b.updatedAt = Date.now(); save(); // fresh timestamp so viewers treat it as newest
-    download(PUBLISHED, JSON.stringify(b, null, 2));
-    toast('Snapshot downloaded — commit board-state.json to publish');
-    renderLive();
   }
   function download(name, text) {
     const a = document.createElement('a');
@@ -594,8 +551,7 @@
     $('#urlDraft').href = mflUrl(b.year, b.leagueId, 'draftResults');
     $('#urlRookies').href = mflPlayersUrl(b.year);
     $('#roundsInput').value = b.rounds; $('#snakeInput').checked = b.snake;
-    $('#autoRefreshToggle').checked = state.settings.autoRefresh;
-    renderOrder(b); renderLive();
+    renderOrder(b);
     const m = $('#settingsModal');
     if (m.showModal) m.showModal(); else m.setAttribute('open', '');
   }
@@ -706,14 +662,6 @@
       const href = $('#' + c.dataset.copy).href; navigator.clipboard?.writeText(href).then(() => toast('URL copied'));
     });
 
-    // settings: live
-    $('#publishBtn').addEventListener('click', onPublish);
-    $('#autoRefreshToggle').addEventListener('change', (e) => {
-      state.settings.autoRefresh = e.target.checked; save();
-      if (e.target.checked) startPolling(); else { stopPolling(); }
-      renderLive();
-    });
-
     // settings: backup
     $('#exportBtn').addEventListener('click', onExport);
     $('#importBtn').addEventListener('click', () => $('#importFile').click());
@@ -725,12 +673,8 @@
     // close modals on backdrop
     for (const m of [pickModal, $('#settingsModal')]) m.addEventListener('click', (e) => { if (e.target === m) m.close(); });
 
-    // live sync hooks
+    // cross-tab sync (same device)
     window.addEventListener('storage', onStorage);
-    document.addEventListener('visibilitychange', () => {
-      if (document.hidden) stopPolling();
-      else if (state.settings.autoRefresh) startPolling();
-    });
   }
 
   // ---- clock handlers ----
@@ -782,7 +726,6 @@
     bind();
     renderAll();
     ensureRookies(board().year).then((l) => { if (l) renderRookieDatalist(board()); });
-    if (state.settings.autoRefresh) startPolling();
   }
   init();
 })();

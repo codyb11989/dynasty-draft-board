@@ -18,7 +18,6 @@
       </div>
     </div>
     <div class="header-controls">
-      <span class="live-pill" id="livePill" title="Live status"><span class="live-dot"></span><span id="liveText">Local</span></span>
       <button class="btn ghost" id="fullscreenBtn" type="button" title="Full-screen the board">⛶ Full screen</button>
       <button class="btn ghost" id="settingsBtn" type="button" title="Update data &amp; settings">⚙ Update / Settings</button>
     </div>
@@ -197,37 +196,10 @@
           </div>
         </section>
 
-        <!-- B. Live sharing -->
-        <section class="set-block">
-          <h4>② Live board for other viewers</h4>
-          <p class="muted small">
-            Same-screen tabs/windows update instantly on their own. To let people on
-            <em>other devices</em> watch, publish a snapshot and commit it to the repo —
-            their boards auto-refresh from it.
-          </p>
-          <div class="row wrap">
-            <button class="btn" id="publishBtn" type="button">⬇ Publish snapshot (board-state.json)</button>
-            <label class="field checkbox inline">
-              <input id="autoRefreshToggle" type="checkbox" checked />
-              <span>Auto-refresh from published board</span>
-            </label>
-          </div>
-          <p class="muted small" id="liveInfo"></p>
-          <details class="howto">
-            <summary>How to publish (one time setup, then one commit per update)</summary>
-            <ol class="howto-list">
-              <li>Click <strong>Publish snapshot</strong> — it downloads <code>board-state.json</code>.</li>
-              <li>Drop that file into the repo root (replace the old one) and commit/push:
-                <code>git add board-state.json &amp;&amp; git commit -m "update board" &amp;&amp; git push</code></li>
-              <li>GitHub Pages redeploys in ~1 min; every open board polls and updates itself.</li>
-            </ol>
-          </details>
-        </section>
-
-        <!-- C. Teams & draft order (advanced) -->
+        <!-- B. Teams & draft order (advanced) -->
         <section class="set-block">
           <details>
-            <summary><h4 style="display:inline">③ Teams, order &amp; format (manual)</h4></summary>
+            <summary><h4 style="display:inline">② Teams, order &amp; format (manual)</h4></summary>
             <div class="row">
               <label class="field">
                 <span>Rounds</span>
@@ -245,7 +217,7 @@
 
         <!-- D. Backup -->
         <section class="set-block">
-          <h4>④ Backup &amp; reset</h4>
+          <h4>③ Backup &amp; reset</h4>
           <div class="row wrap">
             <button class="btn ghost tiny" id="exportBtn" type="button">⬇ Export board JSON</button>
             <button class="btn ghost tiny" id="importBtn" type="button">⬆ Import board JSON</button>

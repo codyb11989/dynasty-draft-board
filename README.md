@@ -1,6 +1,6 @@
 # 🏈 Loyal Order of Water Buffaloes — Draft Board
 
-A live rookie-draft board for one MyFantasyLeague league (**Loyal Order of Water
+A rookie-draft board for one MyFantasyLeague league (**Loyal Order of Water
 Buffaloes**, league `21931`, 2026). It runs entirely in the browser — no backend —
 so it lives happily on **GitHub Pages**, with state in `localStorage`.
 
@@ -19,7 +19,8 @@ so it lives happily on **GitHub Pages**, with state in `localStorage`.
   color-coding (incl. IDP), and traded picks badged with their new owner.
 - **Full-screen mode** — one click blows the board up to fill the screen for
   watching/projecting (button in the header or board toolbar; `Esc` exits).
-- **Live for viewers** — see *Live sharing* below.
+- **Multi-tab sync** — open the board in several tabs/windows on the same device
+  (e.g. a laptop + a projector) and they update together via the `storage` event.
 - All updates are made under **⚙ Update / Settings** — the main page is just the board.
 
 ## Keeping it up to date (CORS-friendly, no auto-fetch)
@@ -38,23 +39,6 @@ Open → select-all → copy → paste into the one box → **Load**. The box au
 which of the three you pasted. During the draft, re-pasting **draftResults** is the
 one-step way to bring the whole board current.
 
-## Live sharing (auto-update for other viewers)
-
-This is a static site with no backend, so it shares live state two ways:
-
-- **Same machine, instantly:** open the board in multiple tabs/windows (e.g. a
-  laptop + a projector) — they sync automatically via the browser `storage` event.
-- **Other devices:** the board polls a same-origin **`board-state.json`** every 15s
-  and refreshes when it changes. To publish an update for watchers:
-  1. **⚙ → ② Live board → Publish snapshot** — downloads `board-state.json`.
-  2. Drop it in the repo root (replace the old one) and push:
-     `git add board-state.json && git commit -m "update board" && git push`
-  3. Pages redeploys (~1 min) and every open board updates itself. The header pill
-     shows **Live** when a published snapshot is being watched.
-
-  Newest-wins: your in-progress local picks are never clobbered by an older
-  snapshot, and viewers always move forward to the latest published one.
-
 ## Updating the rookie list (`rookies-2026.json`)
 
 Bundled and pulled from MFL. To refresh it (e.g. post-NFL-draft team changes):
@@ -63,7 +47,7 @@ Bundled and pulled from MFL. To refresh it (e.g. post-NFL-draft team changes):
 
 ## Run locally
 
-Static files — serve the folder (the rookie list and live-sync use `fetch`, which
+Static files — serve the folder (the rookie list uses `fetch`, which
 needs a server, not `file://`):
 
 ```bash
@@ -78,6 +62,5 @@ Source → GitHub Actions**.)
 
 ## Data & privacy
 
-Everything is in `localStorage` (key `ddb.state.v2`) on each device. **⚙ → ④ Backup**
-exports/imports the board JSON or resets to league defaults. The committed
-`board-state.json` is the only shared/published copy.
+Everything is in `localStorage` (key `ddb.state.v2`) on each device. **⚙ → ③ Backup**
+exports/imports the board JSON or resets to league defaults.

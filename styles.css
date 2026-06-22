@@ -229,7 +229,7 @@ td.cell { padding: 0; min-width: 150px; height: 62px; vertical-align: stretch; }
 
 /* pick layout with helmet */
 .pick-row { display: flex; align-items: center; gap: 8px; padding-right: 20px; }
-.helmet { width: 30px; height: 24px; flex: none; filter: drop-shadow(0 0.5px 0 rgba(255,255,255,.4)) drop-shadow(0 0 1.5px rgba(0,0,0,.45)); }
+.helmet { width: 36px; height: 28px; flex: none; object-fit: contain; object-position: center; filter: drop-shadow(0 1px 1px rgba(0,0,0,.5)); }
 .pick-text { min-width: 0; display: flex; flex-direction: column; gap: 1px; }
 
 /* traded badge */
@@ -292,13 +292,6 @@ td.cell { padding: 0; min-width: 150px; height: 62px; vertical-align: stretch; }
 }
 .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 .toast.err { border-color: #5a2730; color: #ffb3b3; }
-
-/* ---------- Live pill ---------- */
-.live-pill { display: inline-flex; align-items: center; gap: 6px; font-size: .74rem; font-weight: 700; color: var(--muted); border: 1px solid var(--line); border-radius: 20px; padding: 3px 10px; }
-.live-pill .live-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
-.live-pill.on { color: var(--accent); border-color: rgba(74,222,128,.4); }
-.live-pill.on .live-dot { background: var(--accent); box-shadow: 0 0 0 3px rgba(74,222,128,.18); animation: pulse 2s infinite; }
-@keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .35; } }
 
 /* ---------- Settings sections ---------- */
 .modal.wide { width: min(680px, 94vw); }
