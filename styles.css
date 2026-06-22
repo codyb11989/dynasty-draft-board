@@ -25,6 +25,8 @@
   --WR:  #3b82f6;
   --TE:  #f59e0b;
   --K:   #a855f7;
+  --PK:  #a855f7;
+  --IDP: #06b6d4;
   --DEF: #64748b;
 }
 
@@ -162,6 +164,8 @@ textarea { resize: vertical; font-family: var(--mono); font-size: .8rem; }
 .clock-form #clockPos { width: 80px; flex: none; }
 .clock-form .nfl-in { width: 78px; flex: none; text-transform: uppercase; }
 .clock-nav { display: flex; gap: 6px; }
+.rookie-hint { width: 100%; font-size: .76rem; color: var(--muted); flex-basis: 100%; }
+.rookie-hint b { color: var(--accent); font-weight: 700; }
 @media (max-width: 720px) { .clock-form { flex-wrap: wrap; } }
 
 /* ---------- Board ---------- */
@@ -208,6 +212,8 @@ td.cell { padding: 0; min-width: 150px; height: 62px; vertical-align: stretch; }
 .pick.pos-WR  { border-left-color: var(--WR); }
 .pick.pos-TE  { border-left-color: var(--TE); }
 .pick.pos-K   { border-left-color: var(--K); }
+.pick.pos-PK  { border-left-color: var(--PK); }
+.pick.pos-IDP { border-left-color: var(--IDP); }
 .pick.pos-DEF { border-left-color: var(--DEF); }
 
 /* traded badge */
@@ -226,6 +232,7 @@ td.cell { padding: 0; min-width: 150px; height: 62px; vertical-align: stretch; }
 .dot.traded { background: rgba(245,158,11,.16); border: 1px solid var(--warn); }
 .dot.QB { background: var(--QB);} .dot.RB { background: var(--RB);} .dot.WR { background: var(--WR);}
 .dot.TE { background: var(--TE);} .dot.K { background: var(--K);} .dot.DEF { background: var(--DEF);}
+.dot.PK { background: var(--PK);} .dot.IDP { background: var(--IDP);}
 
 /* ---------- Trades ---------- */
 .trade-form { display: flex; align-items: flex-end; gap: 10px; flex-wrap: wrap; }

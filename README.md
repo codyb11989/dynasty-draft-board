@@ -17,6 +17,11 @@ draft-day trades — right in the browser. Everything is saved to your browser's
   Sticky team column + round headers so big leagues scroll smoothly.
 - **On-the-clock entry** — a fast input bar shows the current pick and team;
   type the player, hit Enter, and it advances to the next pick automatically.
+- **Rookie autocomplete** — the player box suggests from the bundled 2026 rookie
+  class (`rookies-2026.json`, pulled from MFL); picking a name auto-fills position
+  and NFL team, and drafted players drop off the available list. Anyone missing?
+  Just type their name — free text always works. Refresh/replace the pool under
+  **⚙ Settings → Rookie pool**.
 - **Draft-day trades** — reassign any pick to a new owner. The board keeps the
   original team's row and badges the pick with its new owner, so traded picks
   are obvious at a glance.

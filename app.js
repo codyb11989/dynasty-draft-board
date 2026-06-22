@@ -19,6 +19,9 @@
 
   // ---------- state ----------
   let state = loadState();
+  state.settings ||= { proxy: '' };
+  state.refData ||= { rookies: {} };
+  state.refData.rookies ||= {};
 
   function loadState() {
     try {
@@ -211,6 +214,105 @@
   }
 
   // ============================================================
+  //  Rookie pool (available-player list for "Add pick")
+  // ============================================================
+  function mflFixName(n) {
+    n = String(n || '').trim();
+    if (n.includes(',')) { const m = n.split(/,(.+)/); return `${(m[1] || '').trim()} ${m[0].trim()}`.trim(); }
+    return n;
+  }
+  // Parse a raw MFL TYPE=players payload -> [{name,pos,team,college}] for that season's rookies.
+  function parsePlayersPool(data, year) {
+    const pl = data && data.players && data.players.player;
+    if (!pl) throw new Error('Not a TYPE=players response.');
+    const arr = Array.isArray(pl) ? pl : [pl];
+    const ys = String(year);
+    const out = arr
+      .filter((p) => String(p.draft_year) === ys)
+      .map((p) => ({ name: mflFixName(p.name), pos: (p.position || '').toUpperCase(), team: (p.team || '').toUpperCase(), college: p.college || '' }))
+      .filter((p) => p.name);
+    out.sort((a, b) => a.name.localeCompare(b.name));
+    return out;
+  }
+
+  const rookiesFor = (year) => state.refData.rookies[String(year)] || null;
+  function setRookies(year, list) { state.refData.rookies[String(year)] = list; save(); }
+
+  // Load the bundled rookies-<year>.json (best effort; needs the site to be served, not file://).
+  async function ensureRookies(year) {
+    if (rookiesFor(year)) return rookiesFor(year);
+    try {
+      const res = await fetch(`rookies-${year}.json`, { cache: 'no-store' });
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const j = await res.json();
+      const list = Array.isArray(j) ? j : (j.players || []);
+      if (list.length) { setRookies(year, list); return list; }
+    } catch (e) { /* offline / file:// — datalist stays empty, typing still works */ }
+    return null;
+  }
+
+  let _rookieIdx = { key: null, map: new Map() };
+  function rookieIndex(year) {
+    const list = rookiesFor(year) || [];
+    const key = year + ':' + list.length;
+    if (_rookieIdx.key !== key) {
+      const m = new Map();
+      for (const r of list) m.set(r.name.toLowerCase(), r);
+      _rookieIdx = { key, map: m };
+    }
+    return _rookieIdx.map;
+  }
+  function usedPlayerNames(b) {
+    const s = new Set();
+    for (const k in b.picks) { const p = b.picks[k]; if (p && p.player) s.add(p.player.trim().toLowerCase()); }
+    return s;
+  }
+  // Populate the shared <datalist> with rookies not yet drafted on this board.
+  function renderRookieDatalist(b) {
+    const dl = $('#rookieList'), hint = $('#rookieHint'), pool = $('#poolStatus');
+    const list = rookiesFor(b.year) || [];
+    if (!list.length) {
+      dl.innerHTML = '';
+      if (hint) hint.innerHTML = 'No rookie list loaded — typing still works. <span class="muted">Load it in ⚙ Settings.</span>';
+      if (pool) pool.textContent = `No rookie list loaded for ${b.year}.`;
+      return;
+    }
+    const used = usedPlayerNames(b);
+    const avail = list.filter((r) => !used.has(r.name.toLowerCase()));
+    dl.innerHTML = avail.map((r) =>
+      `<option value="${esc(r.name)}">${esc([r.pos, r.team, r.college].filter(Boolean).join(' · '))}</option>`).join('');
+    if (hint) hint.innerHTML = `<b>${avail.length}</b> of ${list.length} ${b.year} rookies available · start typing to search`;
+    if (pool) pool.textContent = `${list.length} ${b.year} rookies loaded (${avail.length} still available).`;
+  }
+
+  // When a player name matches a known rookie, fill in position + NFL team.
+  function setSelectPos(sel, pos) {
+    pos = (pos || '').toUpperCase();
+    if (!pos) { sel.value = ''; return; }
+    let opt = [...sel.options].find((o) => o.value.toUpperCase() === pos);
+    if (!opt) { opt = new Option(pos, pos); sel.add(opt); }
+    sel.value = opt.value;
+  }
+  function autofillFromRookie(year, nameEl, posEl, nflEl) {
+    const r = rookieIndex(year).get(nameEl.value.trim().toLowerCase());
+    if (!r) return;
+    if (posEl) setSelectPos(posEl, r.pos);
+    if (nflEl) nflEl.value = r.team || '';
+  }
+
+  // Map any position (incl. IDP) to a board color class.
+  const IDP_SET = new Set(['DT', 'DE', 'LB', 'CB', 'S', 'DB', 'DL', 'NT', 'EDGE', 'OLB', 'ILB', 'MLB', 'FS', 'SS', 'IDP']);
+  function posClass(pos) {
+    if (!pos) return '';
+    pos = pos.toUpperCase();
+    if (['QB', 'RB', 'WR', 'TE'].includes(pos)) return 'pos-' + pos;
+    if (pos === 'PK' || pos === 'K') return 'pos-PK';
+    if (pos === 'DEF' || pos === 'DST') return 'pos-DEF';
+    if (IDP_SET.has(pos)) return 'pos-IDP';
+    return '';
+  }
+
+  // ============================================================
   //  Rendering
   // ============================================================
   const el = {
@@ -254,6 +356,11 @@
     renderClock(b);
     renderBoard(b);
     renderTrades(b);
+    renderRookieDatalist(b);
+    // lazily fetch the bundled rookie file the first time we see this season
+    if (!rookiesFor(b.year)) {
+      ensureRookies(b.year).then((list) => { if (list && state.activeId === b.id) renderRookieDatalist(b); });
+    }
   }
 
   function renderBoardSelect() {
@@ -338,8 +445,8 @@
         const traded = ownerFid !== origFid;
         const pir = pickInRound(b, r, slot);
         const overall = overallOf(b, r, slot);
-        const posClass = pick && pick.pos && pick.pos !== 'OTHER' ? `pos-${pick.pos}` : '';
-        const cls = ['pick', posClass, traded ? 'traded' : '', pick && pick.player ? '' : 'empty',
+        const posCls = pick && pick.player ? posClass(pick.pos) : '';
+        const cls = ['pick', posCls, traded ? 'traded' : '', pick && pick.player ? '' : 'empty',
           key === onClockKey ? 'onclock' : ''].filter(Boolean).join(' ');
         const sub = pick && pick.player
           ? [pick.pos && pick.pos !== 'OTHER' ? pick.pos : '', pick.nfl ? pick.nfl.toUpperCase() : '']
@@ -443,7 +550,7 @@
     });
     setOwner(b, modalKey, $('#mOwner').value);
     closePickModal();
-    renderClock(b); renderBoard(b); renderTrades(b);
+    renderClock(b); renderBoard(b); renderTrades(b); renderRookieDatalist(b);
   }
 
   // ============================================================
@@ -522,6 +629,9 @@
     $('#clockPrev').addEventListener('click', () => moveCursor(-1));
     $('#clockNext').addEventListener('click', () => moveCursor(1));
     $('#clockUndo').addEventListener('click', onClockClear);
+    $('#clockPlayer').addEventListener('input', () => {
+      const b = active(); if (b) autofillFromRookie(b.year, $('#clockPlayer'), $('#clockPos'), $('#clockNfl'));
+    });
 
     // ---- board interactions ----
     el.boardTable.addEventListener('click', (e) => {
@@ -539,13 +649,16 @@
     });
 
     // ---- pick modal ----
+    $('#mPlayer').addEventListener('input', () => {
+      const b = active(); if (b) autofillFromRookie(b.year, $('#mPlayer'), $('#mPos'), $('#mNfl'));
+    });
     $('#mSave').addEventListener('click', savePickModal);
     $('#mCancel').addEventListener('click', closePickModal);
     $('#modalClose').addEventListener('click', closePickModal);
     $('#mClear').addEventListener('click', () => {
       const b = active(); if (!b || !modalKey) return;
       setPick(b, modalKey, null);
-      closePickModal(); renderClock(b); renderBoard(b);
+      closePickModal(); renderClock(b); renderBoard(b); renderRookieDatalist(b);
     });
     $('#pickForm').addEventListener('submit', (e) => { e.preventDefault(); savePickModal(); });
 
@@ -585,6 +698,9 @@
     $('#importFile').addEventListener('change', onImportFile);
     $('#renameBoardBtn').addEventListener('click', onRenameBoard);
     $('#deleteBoardBtn').addEventListener('click', onDeleteBoard);
+    $('#reloadPoolBtn').addEventListener('click', onReloadPool);
+    $('#pastePoolBtn').addEventListener('click', () => { $('#poolPasteBox').classList.toggle('hidden'); updatePoolUrl(); });
+    $('#loadPoolBtn').addEventListener('click', onLoadPoolPaste);
 
     // close modals on backdrop click
     for (const m of [pickModal, $('#settingsModal')]) {
@@ -859,7 +975,7 @@
     // advance to next empty pick
     b.cursor = firstEmptyOverall(b);
     touch(b);
-    renderClock(b); renderBoard(b);
+    renderClock(b); renderBoard(b); renderRookieDatalist(b);
     el.clockPlayer.focus();
     // keep on-clock cell visible
     scrollOnClockIntoView();
@@ -868,7 +984,7 @@
     const b = active(); if (!b) return;
     const p = pickAt(b, b.cursor);
     setPick(b, p.key, null);
-    renderClock(b); renderBoard(b);
+    renderClock(b); renderBoard(b); renderRookieDatalist(b);
   }
   function moveCursor(delta) {
     const b = active(); if (!b || !b.order.length) return;
@@ -883,8 +999,33 @@
   // ---------- settings / data ----------
   function openSettings() {
     $('#proxyInput').value = state.settings.proxy || '';
+    const b = active(); if (b) { renderRookieDatalist(b); updatePoolUrl(); }
+    $('#poolPasteBox').classList.add('hidden');
     const m = $('#settingsModal');
     if (typeof m.showModal === 'function') m.showModal(); else m.setAttribute('open', '');
+  }
+  function updatePoolUrl() {
+    const b = active(); if (!b) return;
+    $('#poolUrl').href = `https://api.myfantasyleague.com/${b.year}/export?TYPE=players&DETAILS=1&JSON=1`;
+  }
+  async function onReloadPool() {
+    const b = active(); if (!b) return;
+    delete state.refData.rookies[String(b.year)]; save();
+    const list = await ensureRookies(b.year);
+    renderRookieDatalist(b);
+    toast(list ? `Loaded ${list.length} ${b.year} rookies` : 'Could not load — serve the site or paste manually', !list);
+  }
+  function onLoadPoolPaste() {
+    const b = active(); if (!b) return;
+    try {
+      const list = parsePlayersPool(JSON.parse($('#poolJson').value), b.year);
+      if (!list.length) throw new Error(`No ${b.year} rookies found in that data.`);
+      setRookies(b.year, list);
+      renderRookieDatalist(b);
+      $('#poolJson').value = '';
+      $('#poolPasteBox').classList.add('hidden');
+      toast(`Loaded ${list.length} ${b.year} rookies`);
+    } catch (e) { toast('Could not load: ' + e.message, true); }
   }
   function onExport() {
     const b = active(); if (!b) return;

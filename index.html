@@ -131,11 +131,12 @@
           </div>
         </div>
         <form id="clockForm" class="clock-form" autocomplete="off">
-          <input id="clockPlayer" type="text" placeholder="Player name…" aria-label="Player name" />
+          <input id="clockPlayer" type="text" list="rookieList" placeholder="Search rookies or type a name…" aria-label="Player name" />
           <select id="clockPos" aria-label="Position">
             <option value="">POS</option>
-            <option>QB</option><option>RB</option><option>WR</option><option>TE</option>
-            <option>K</option><option>DEF</option><option value="OTHER">—</option>
+            <option>QB</option><option>RB</option><option>WR</option><option>TE</option><option>PK</option>
+            <option>DT</option><option>DE</option><option>LB</option><option>CB</option><option>S</option>
+            <option value="OTHER">—</option>
           </select>
           <input id="clockNfl" type="text" maxlength="4" placeholder="TEAM" aria-label="NFL team" class="nfl-in" />
           <button class="btn primary" id="clockSubmit" type="submit">Submit pick →</button>
@@ -145,6 +146,7 @@
           <button class="btn ghost tiny" id="clockUndo" type="button" title="Clear current pick">Clear</button>
           <button class="btn ghost tiny" id="clockNext" type="button" title="Next pick">Next ›</button>
         </div>
+        <div class="rookie-hint" id="rookieHint"></div>
       </div>
     </section>
 
@@ -169,8 +171,8 @@
         <span class="legend-item"><span class="dot RB"></span> RB</span>
         <span class="legend-item"><span class="dot WR"></span> WR</span>
         <span class="legend-item"><span class="dot TE"></span> TE</span>
-        <span class="legend-item"><span class="dot K"></span> K</span>
-        <span class="legend-item"><span class="dot DEF"></span> DEF</span>
+        <span class="legend-item"><span class="dot PK"></span> PK</span>
+        <span class="legend-item"><span class="dot IDP"></span> IDP</span>
       </div>
     </section>
 
@@ -210,15 +212,16 @@
         <p class="muted small" id="modalSub"></p>
         <label class="field">
           <span>Player</span>
-          <input id="mPlayer" type="text" placeholder="Player name" />
+          <input id="mPlayer" type="text" list="rookieList" placeholder="Search rookies or type a name" />
         </label>
         <div class="row">
           <label class="field">
             <span>Position</span>
             <select id="mPos">
               <option value="">—</option>
-              <option>QB</option><option>RB</option><option>WR</option><option>TE</option>
-              <option>K</option><option>DEF</option><option value="OTHER">Other</option>
+              <option>QB</option><option>RB</option><option>WR</option><option>TE</option><option>PK</option>
+              <option>DT</option><option>DE</option><option>LB</option><option>CB</option><option>S</option>
+              <option value="OTHER">Other</option>
             </select>
           </label>
           <label class="field">
@@ -254,6 +257,18 @@
           <small class="muted">Optional. Use <code>{url}</code> as a placeholder, or end with <code>?url=</code>. Manual paste always works without this.</small>
         </label>
         <hr />
+        <h4>Rookie pool</h4>
+        <p class="muted small" id="poolStatus">No rookie list loaded.</p>
+        <div class="row wrap">
+          <button class="btn ghost tiny" id="reloadPoolBtn" type="button">↻ Reload bundled rookies</button>
+          <button class="btn ghost tiny" id="pastePoolBtn" type="button">⬆ Paste MFL players</button>
+        </div>
+        <div id="poolPasteBox" class="hidden" style="margin-top:8px;">
+          <p class="small muted">Open <a id="poolUrl" href="#" target="_blank" rel="noopener">TYPE=players&amp;DETAILS=1</a>, paste the JSON, then Load. Rookies are filtered by this board's season.</p>
+          <textarea id="poolJson" rows="4" placeholder="Paste the TYPE=players JSON here…"></textarea>
+          <button class="btn primary tiny" id="loadPoolBtn" type="button">Load players</button>
+        </div>
+        <hr />
         <h4>This board</h4>
         <div class="row wrap">
           <button class="btn ghost tiny" id="exportBtn" type="button">⬇ Export JSON</button>
@@ -269,6 +284,9 @@
       </footer>
     </div>
   </dialog>
+
+  <!-- Shared autocomplete list of available rookies (populated by app.js) -->
+  <datalist id="rookieList"></datalist>
 
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
