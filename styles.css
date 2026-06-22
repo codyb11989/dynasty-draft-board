@@ -28,6 +28,12 @@
   --PK:  #a855f7;
   --IDP: #06b6d4;
   --DEF: #64748b;
+  /* unique defensive-position colors */
+  --DT:  #2dd4bf;
+  --DE:  #38bdf8;
+  --LB:  #f472b6;
+  --CB:  #6366f1;
+  --S:   #facc15;
 }
 
 * { box-sizing: border-box; }
@@ -201,9 +207,9 @@ td.cell { padding: 0; min-width: 150px; height: 62px; vertical-align: stretch; }
 }
 .pick:hover { background: rgba(255,255,255,.04); }
 .pick .pick-no { font-family: var(--mono); font-size: .68rem; color: var(--muted); position: absolute; top: 5px; right: 8px; }
-.pick .player { font-weight: 700; font-size: .9rem; line-height: 1.15; padding-right: 26px; }
+.pick .player { font-weight: 700; font-size: .9rem; line-height: 1.15; }
 .pick .sub { font-size: .72rem; color: var(--muted); }
-.pick.empty .player { color: #54607a; font-weight: 600; font-style: italic; }
+.pick.empty .player { color: #54607a; font-weight: 600; font-style: italic; padding-right: 24px; }
 .pick.onclock { box-shadow: inset 0 0 0 2px var(--accent); background: rgba(74,222,128,.07); }
 
 /* position accents */
@@ -213,8 +219,18 @@ td.cell { padding: 0; min-width: 150px; height: 62px; vertical-align: stretch; }
 .pick.pos-TE  { border-left-color: var(--TE); }
 .pick.pos-K   { border-left-color: var(--K); }
 .pick.pos-PK  { border-left-color: var(--PK); }
+.pick.pos-DT  { border-left-color: var(--DT); }
+.pick.pos-DE  { border-left-color: var(--DE); }
+.pick.pos-LB  { border-left-color: var(--LB); }
+.pick.pos-CB  { border-left-color: var(--CB); }
+.pick.pos-S   { border-left-color: var(--S); }
 .pick.pos-IDP { border-left-color: var(--IDP); }
 .pick.pos-DEF { border-left-color: var(--DEF); }
+
+/* pick layout with helmet */
+.pick-row { display: flex; align-items: center; gap: 8px; padding-right: 20px; }
+.helmet { width: 30px; height: 24px; flex: none; filter: drop-shadow(0 0.5px 0 rgba(255,255,255,.4)) drop-shadow(0 0 1.5px rgba(0,0,0,.45)); }
+.pick-text { min-width: 0; display: flex; flex-direction: column; gap: 1px; }
 
 /* traded badge */
 .pick.traded { background: repeating-linear-gradient(45deg, transparent, transparent 9px, rgba(245,158,11,.05) 9px, rgba(245,158,11,.05) 18px); }
@@ -233,6 +249,8 @@ td.cell { padding: 0; min-width: 150px; height: 62px; vertical-align: stretch; }
 .dot.QB { background: var(--QB);} .dot.RB { background: var(--RB);} .dot.WR { background: var(--WR);}
 .dot.TE { background: var(--TE);} .dot.K { background: var(--K);} .dot.DEF { background: var(--DEF);}
 .dot.PK { background: var(--PK);} .dot.IDP { background: var(--IDP);}
+.dot.DT { background: var(--DT);} .dot.DE { background: var(--DE);} .dot.LB { background: var(--LB);}
+.dot.CB { background: var(--CB);} .dot.S { background: var(--S);}
 
 /* ---------- Trades ---------- */
 .trade-form { display: flex; align-items: flex-end; gap: 10px; flex-wrap: wrap; }

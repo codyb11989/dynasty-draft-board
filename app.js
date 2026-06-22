@@ -279,15 +279,46 @@
     if (posEl) setSelectPos(posEl, r.pos);
     if (nflEl) nflEl.value = r.team || '';
   }
-  const IDP_SET = new Set(['DT', 'DE', 'LB', 'CB', 'S', 'DB', 'DL', 'NT', 'EDGE', 'OLB', 'ILB', 'MLB', 'FS', 'SS', 'IDP']);
+  // positions with their own board color (offense + each defensive spot)
+  const POS_COLORS = new Set(['QB', 'RB', 'WR', 'TE', 'PK', 'DT', 'DE', 'LB', 'CB', 'S']);
+  const IDP_SET = new Set(['DB', 'DL', 'NT', 'EDGE', 'OLB', 'ILB', 'MLB', 'FS', 'SS', 'IDP']);
   function posClass(pos) {
     if (!pos) return '';
     pos = pos.toUpperCase();
-    if (['QB', 'RB', 'WR', 'TE'].includes(pos)) return 'pos-' + pos;
-    if (pos === 'PK' || pos === 'K') return 'pos-PK';
+    if (POS_COLORS.has(pos)) return 'pos-' + pos;
+    if (pos === 'K') return 'pos-PK';
     if (pos === 'DEF' || pos === 'DST') return 'pos-DEF';
     if (IDP_SET.has(pos)) return 'pos-IDP';
     return '';
+  }
+
+  // ---------- NFL team helmets (self-contained SVG, tinted per team) ----------
+  // [shell color, stripe/accent color], keyed by MFL team code.
+  const TEAM_COLORS = {
+    ARI: ['#97233F', '#FFB612'], ATL: ['#A71930', '#111111'], BAL: ['#241773', '#9E7C0C'],
+    BUF: ['#00338D', '#C60C30'], CAR: ['#0085CA', '#101820'], CHI: ['#0B162A', '#C83803'],
+    CIN: ['#FB4F14', '#111111'], CLE: ['#3a2400', '#FF3C00'], DAL: ['#041E42', '#869397'],
+    DEN: ['#FB4F14', '#002244'], DET: ['#0076B6', '#B0B7BC'], GBP: ['#203731', '#FFB612'],
+    HOU: ['#03202F', '#A71930'], IND: ['#002C5F', '#A2AAAD'], JAC: ['#006778', '#D7A22A'],
+    KCC: ['#E31837', '#FFB81C'], LAC: ['#0080C6', '#FFC20E'], LAR: ['#003594', '#FFA300'],
+    LVR: ['#11151a', '#A5ACAF'], MIA: ['#008E97', '#FC4C02'], MIN: ['#4F2683', '#FFC62F'],
+    NEP: ['#002244', '#C60C30'], NOS: ['#9F8958', '#101820'], NYG: ['#0B2265', '#A71930'],
+    NYJ: ['#125740', '#E8E8E8'], PHI: ['#004C54', '#A5ACAF'], PIT: ['#1a1d22', '#FFB612'],
+    SEA: ['#002244', '#69BE28'], SFO: ['#AA0000', '#B3995D'], TBB: ['#D50A0A', '#3b3530'],
+    TEN: ['#0C2340', '#4B92DB'], WAS: ['#5A1414', '#FFB612'],
+  };
+  function helmet(team) {
+    const [p, s] = TEAM_COLORS[(team || '').toUpperCase()] || ['#3a4456', '#aab2c0'];
+    return `<svg class="helmet" viewBox="0 0 64 52" aria-hidden="true" focusable="false">
+      <path fill="${p}" d="M30 5C16 5 5 15 5 28c0 9 5 16 15 17 5 1 10-1 13-4l-3-6c-4 2-9 1-12-3-5-7-1-16 9-18 12-2 24 3 28 14 2-5 1-13-4-16C46 6 38 5 30 5Z"/>
+      <path fill="${p}" d="M33 38c11 1 19-3 23-11 4 6 1 17-9 20-7 2-13-1-14-6Z"/>
+      <path fill="${s}" d="M22 7c8-3 20-2 28 4l-4 4c-7-5-16-6-22-3Z"/>
+      <g stroke="#d6dae0" stroke-width="2.3" fill="none" stroke-linecap="round">
+        <path d="M34 35c11 0 19 3 21 9"/>
+        <path d="M35 41c9 1 15 3 17 6"/>
+      </g>
+      <circle cx="24" cy="28" r="3.3" fill="#00000055"/>
+    </svg>`;
   }
 
   // ============================================================
@@ -346,10 +377,15 @@
         const sub = pick && pick.player
           ? [pick.pos && pick.pos !== 'OTHER' ? pick.pos : '', pick.nfl ? pick.nfl.toUpperCase() : ''].filter(Boolean).join(' · ') : '';
         const badge = traded ? `<span class="trade-badge" title="Now owned by ${esc(teamName(b, ownerFid))}">→ ${esc(teamName(b, ownerFid))}</span>` : '';
+        const filled = pick && pick.player;
+        const inner = filled
+          ? `<div class="pick-row">${helmet(pick.nfl)}<div class="pick-text">
+                <span class="player">${esc(pick.player)}</span>
+                ${sub ? `<span class="sub">${esc(sub)}</span>` : ''}
+              </div></div>${badge}`
+          : `<span class="player">Add pick</span>`;
         body += `<td class="cell"><div class="${cls}" data-key="${key}" data-round="${r}" data-slot="${slot}" tabindex="0" role="button">
-            <span class="pick-no" title="Overall #${overall}">${r}.${pad2(pir)}</span>
-            <span class="player">${pick && pick.player ? esc(pick.player) : 'Add pick'}</span>
-            ${sub ? `<span class="sub">${esc(sub)}</span>` : ''}${badge}
+            <span class="pick-no" title="Overall #${overall}">${r}.${pad2(pir)}</span>${inner}
           </div></td>`;
       }
       body += '</tr>';
