@@ -518,7 +518,7 @@
   }
 
   // ============================================================
-  //  Cross-tab sync (same device) + file download helper
+  //  Cross-tab sync (same device) + file download helpers
   // ============================================================
   function onStorage(e) {
     if (e.key !== STORE_KEY || !e.newValue) return;
@@ -528,6 +528,59 @@
     const a = document.createElement('a');
     a.href = URL.createObjectURL(new Blob([text], { type: 'application/json' }));
     a.download = name; a.click(); URL.revokeObjectURL(a.href);
+  }
+  function csvRow(cells) {
+    return cells.map((v) => {
+      const s = String(v ?? '');
+      return (s.includes(',') || s.includes('"') || s.includes('\n')) ? `"${s.replace(/"/g, '""')}"` : s;
+    }).join(',');
+  }
+  function downloadCSV(name, rows) {
+    const text = rows.map(csvRow).join('\r\n');
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([text], { type: 'text/csv' }));
+    a.download = name; a.click(); URL.revokeObjectURL(a.href);
+  }
+
+  // ============================================================
+  //  CSV exports
+  // ============================================================
+  // MFL post-draft import format: round,pick,franchise,player
+  // "pick" = chronological pick number within the round (matches MFL's draftResults schema).
+  // "player" = MFL player ID looked up from the rookie pool; blank if the player isn't in the pool.
+  function exportMFLCsv() {
+    const b = board();
+    const rIdx = rookieIndex(b.year);
+    const rows = [['round', 'pick', 'franchise', 'player']];
+    let missing = 0;
+    for (const p of sequence(b)) {
+      const pick = b.picks[p.key];
+      if (!pick || !pick.player) continue;
+      const meta = rIdx.get(pick.player.trim().toLowerCase());
+      const pid = meta ? meta.id : '';
+      if (!pid) missing++;
+      rows.push([p.round, p.pickInRound, p.ownerFid, pid]);
+    }
+    downloadCSV(`${b.name.replace(/[^a-z0-9]+/gi, '_')}_${b.year}_mfl_import.csv`, rows);
+    if (missing) toast(`MFL CSV: ${missing} player(s) had no MFL ID — those rows have a blank player column.`, true);
+    else toast('MFL import CSV exported');
+  }
+
+  // Detailed results: all pick slots with player info and ownership
+  function exportDetailedCsv() {
+    const b = board();
+    const rows = [['Overall', 'Round', 'Pick', 'Player', 'Position', 'NFLTeam', 'Owner', 'OriginalOwner']];
+    for (const p of sequence(b)) {
+      const pick = b.picks[p.key] || {};
+      rows.push([
+        p.overall, p.round, p.pickInRound,
+        pick.player || '', pick.pos || '', pick.nfl || '',
+        teamName(b, p.ownerFid),
+        p.ownerFid !== p.origFid ? teamName(b, p.origFid) : '',
+      ]);
+    }
+    downloadCSV(`${b.name.replace(/[^a-z0-9]+/gi, '_')}_${b.year}_draft_results.csv`, rows);
+    toast('Draft results CSV exported');
   }
 
   // ============================================================
@@ -667,6 +720,8 @@
     $('#importBtn').addEventListener('click', () => $('#importFile').click());
     $('#importFile').addEventListener('change', onImportFile);
     $('#resetBtn').addEventListener('click', onReset);
+    $('#exportMFLBtn').addEventListener('click', exportMFLCsv);
+    $('#exportDetailedBtn').addEventListener('click', exportDetailedCsv);
     $('#settingsClose').addEventListener('click', () => $('#settingsModal').close());
     $('#settingsDone').addEventListener('click', () => $('#settingsModal').close());
 
