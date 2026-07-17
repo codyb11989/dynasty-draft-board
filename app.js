@@ -364,15 +364,17 @@
     $('#boardProgress').textContent = `${madeCount(b)} / ${total} picks · ${b.order.length} teams · ${b.rounds} rounds`;
     const onClockKey = pickAt(b, b.cursor)?.key;
 
-    let head = '<thead><tr><th class="corner">Team</th>';
-    for (let r = 1; r <= b.rounds; r++) head += `<th>Round ${r}</th>`;
+    let head = '<thead><tr><th class="corner">Round</th>';
+    for (let slot = 0; slot < b.order.length; slot++) {
+      head += `<th class="team-head"><div class="team-name">${esc(teamName(b, b.order[slot]))}</div><div class="team-seed">Seed ${slot + 1}</div></th>`;
+    }
     head += '</tr></thead>';
 
     let body = '<tbody>';
-    for (let slot = 0; slot < b.order.length; slot++) {
-      const origFid = b.order[slot];
-      body += `<tr><td class="team-col"><div class="team-name">${esc(teamName(b, origFid))}</div><div class="team-seed">Seed ${slot + 1}</div></td>`;
-      for (let r = 1; r <= b.rounds; r++) {
+    for (let r = 1; r <= b.rounds; r++) {
+      body += `<tr><td class="round-col"><div class="round-name">Round ${r}</div></td>`;
+      for (let slot = 0; slot < b.order.length; slot++) {
+        const origFid = b.order[slot];
         const key = cellKey(r, slot);
         const pick = b.picks[key];
         const ownerFid = b.owners[key] || origFid;
