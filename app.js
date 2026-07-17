@@ -269,11 +269,19 @@
     if (!opt) { opt = new Option(pos, pos); sel.add(opt); }
     sel.value = opt.value;
   }
-  function autofillFromRookie(year, nameEl, posEl, nflEl) {
+  // Autofill pos/team from the rookie list and lock those fields while the
+  // name matches a known rookie; unknown (custom) names keep them editable.
+  function syncRookieLock(year, nameEl, posEl, nflEl) {
     const r = rookieIndex(year).get(nameEl.value.trim().toLowerCase());
-    if (!r) return;
-    if (posEl) setSelectPos(posEl, r.pos);
-    if (nflEl) nflEl.value = r.team || '';
+    if (r) {
+      setSelectPos(posEl, r.pos);
+      nflEl.value = r.team || '';
+    }
+    const lockPos = !!(r && r.pos), lockNfl = !!(r && r.team);
+    posEl.disabled = lockPos;
+    posEl.title = lockPos ? 'Set from the rookie list' : '';
+    nflEl.disabled = lockNfl;
+    nflEl.title = lockNfl ? 'Set from the rookie list' : '';
   }
   // positions with their own board color (offense + each defensive spot)
   const POS_COLORS = new Set(['QB', 'RB', 'WR', 'TE', 'PK', 'DT', 'DE', 'LB', 'CB', 'S']);
@@ -338,8 +346,9 @@
       ? `traded from ${teamName(b, p.origFid)} · overall #${p.overall}` : `overall #${p.overall}`;
     const cur = b.picks[p.key] || {};
     $('#clockPlayer').value = cur.player || '';
-    $('#clockPos').value = cur.pos || '';
+    setSelectPos($('#clockPos'), cur.pos);
     $('#clockNfl').value = cur.nfl || '';
+    syncRookieLock(b.year, $('#clockPlayer'), $('#clockPos'), $('#clockNfl'));
   }
 
   function renderBoard(b) {
@@ -454,7 +463,8 @@
     const origFid = b.order[slot], pick = b.picks[key] || {}, ownerFid = b.owners[key] || origFid;
     $('#modalTitle').textContent = `Round ${round} · ${teamName(b, origFid)}`;
     $('#modalSub').innerHTML = `Pick <strong>${round}.${pad2(pickInRound(b, round, slot))}</strong> · overall #${overallOf(b, round, slot)}`;
-    $('#mPlayer').value = pick.player || ''; $('#mPos').value = pick.pos || ''; $('#mNfl').value = pick.nfl || '';
+    $('#mPlayer').value = pick.player || ''; setSelectPos($('#mPos'), pick.pos); $('#mNfl').value = pick.nfl || '';
+    syncRookieLock(b.year, $('#mPlayer'), $('#mPos'), $('#mNfl'));
     $('#mOwner').innerHTML = b.order.map((fid) =>
       `<option value="${fid}" ${fid === ownerFid ? 'selected' : ''}>${esc(teamName(b, fid))}${fid === origFid ? ' (original)' : ''}</option>`).join('');
     if (pickModal.showModal) pickModal.showModal(); else pickModal.setAttribute('open', '');
@@ -662,7 +672,7 @@
     $('#clockPrev').addEventListener('click', () => moveCursor(-1));
     $('#clockNext').addEventListener('click', () => moveCursor(1));
     $('#clockUndo').addEventListener('click', onClockClear);
-    $('#clockPlayer').addEventListener('input', () => autofillFromRookie(board().year, $('#clockPlayer'), $('#clockPos'), $('#clockNfl')));
+    $('#clockPlayer').addEventListener('input', () => syncRookieLock(board().year, $('#clockPlayer'), $('#clockPos'), $('#clockNfl')));
 
     // board
     $('#boardTable').addEventListener('click', (e) => {
@@ -676,7 +686,7 @@
     });
 
     // pick modal
-    $('#mPlayer').addEventListener('input', () => autofillFromRookie(board().year, $('#mPlayer'), $('#mPos'), $('#mNfl')));
+    $('#mPlayer').addEventListener('input', () => syncRookieLock(board().year, $('#mPlayer'), $('#mPos'), $('#mNfl')));
     $('#mSave').addEventListener('click', savePickModal);
     $('#mCancel').addEventListener('click', closePickModal);
     $('#modalClose').addEventListener('click', closePickModal);

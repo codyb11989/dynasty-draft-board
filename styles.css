@@ -102,6 +102,7 @@ input, select, textarea {
   padding: 9px 11px; border-radius: var(--radius-sm); font: inherit; font-size: .9rem; width: 100%;
 }
 input:focus, select:focus, textarea:focus { outline: 2px solid var(--accent); outline-offset: 0; border-color: transparent; }
+input:disabled, select:disabled { opacity: .6; cursor: not-allowed; border-style: dashed; }
 textarea { resize: vertical; font-family: var(--mono); font-size: .8rem; }
 .row { display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap; }
 .row.wrap { align-items: center; }
