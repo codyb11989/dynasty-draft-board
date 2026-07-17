@@ -262,20 +262,27 @@
       `<option value="${esc(r.name)}">${esc([r.pos, r.team, r.college].filter(Boolean).join(' · '))}</option>`).join('');
     if (hint) hint.innerHTML = `<b>${avail.length}</b> of ${list.length} ${b.year} rookies available · start typing to search`;
   }
-  function setSelectPos(sel, pos) {
-    pos = (pos || '').toUpperCase();
-    if (!pos) { sel.value = ''; return; }
-    let opt = [...sel.options].find((o) => o.value.toUpperCase() === pos);
-    if (!opt) { opt = new Option(pos, pos); sel.add(opt); }
+  function setSelectVal(sel, val) {
+    val = (val || '').toUpperCase();
+    if (!val) { sel.value = ''; return; }
+    let opt = [...sel.options].find((o) => o.value.toUpperCase() === val);
+    if (!opt) { opt = new Option(val, val); sel.add(opt); }
     sel.value = opt.value;
+  }
+  // canonicalize alternate abbreviations (GB -> GBP, JAX -> JAC, ...) so one option per team
+  const setSelectTeam = (sel, team) => setSelectVal(sel, helmetCode(team) || team);
+  function renderNflSelects() {
+    const codes = [...HELMET_CODES].sort();
+    for (const [sel, blank] of [[$('#clockNfl'), 'TEAM'], [$('#mNfl'), '—']])
+      sel.innerHTML = `<option value="">${blank}</option>` + codes.map((c) => `<option>${c}</option>`).join('');
   }
   // Autofill pos/team from the rookie list and lock those fields while the
   // name matches a known rookie; unknown (custom) names keep them editable.
   function syncRookieLock(year, nameEl, posEl, nflEl) {
     const r = rookieIndex(year).get(nameEl.value.trim().toLowerCase());
     if (r) {
-      setSelectPos(posEl, r.pos);
-      nflEl.value = r.team || '';
+      setSelectVal(posEl, r.pos);
+      setSelectTeam(nflEl, r.team);
     }
     const lockPos = !!(r && r.pos), lockNfl = !!(r && r.team);
     posEl.disabled = lockPos;
@@ -346,8 +353,8 @@
       ? `traded from ${teamName(b, p.origFid)} · overall #${p.overall}` : `overall #${p.overall}`;
     const cur = b.picks[p.key] || {};
     $('#clockPlayer').value = cur.player || '';
-    setSelectPos($('#clockPos'), cur.pos);
-    $('#clockNfl').value = cur.nfl || '';
+    setSelectVal($('#clockPos'), cur.pos);
+    setSelectTeam($('#clockNfl'), cur.nfl);
     syncRookieLock(b.year, $('#clockPlayer'), $('#clockPos'), $('#clockNfl'));
   }
 
@@ -463,7 +470,7 @@
     const origFid = b.order[slot], pick = b.picks[key] || {}, ownerFid = b.owners[key] || origFid;
     $('#modalTitle').textContent = `Round ${round} · ${teamName(b, origFid)}`;
     $('#modalSub').innerHTML = `Pick <strong>${round}.${pad2(pickInRound(b, round, slot))}</strong> · overall #${overallOf(b, round, slot)}`;
-    $('#mPlayer').value = pick.player || ''; setSelectPos($('#mPos'), pick.pos); $('#mNfl').value = pick.nfl || '';
+    $('#mPlayer').value = pick.player || ''; setSelectVal($('#mPos'), pick.pos); setSelectTeam($('#mNfl'), pick.nfl);
     syncRookieLock(b.year, $('#mPlayer'), $('#mPos'), $('#mNfl'));
     $('#mOwner').innerHTML = b.order.map((fid) =>
       `<option value="${fid}" ${fid === ownerFid ? 'selected' : ''}>${esc(teamName(b, fid))}${fid === origFid ? ' (original)' : ''}</option>`).join('');
@@ -789,6 +796,7 @@
   // ============================================================
   function init() {
     bind();
+    renderNflSelects();
     renderAll();
     ensureRookies(board().year).then((l) => { if (l) renderRookieDatalist(board()); });
   }
