@@ -192,12 +192,17 @@ table.board thead th {
   padding: 10px 12px; text-align: left; white-space: nowrap;
 }
 table.board thead th.corner { left: 0; z-index: 30; }
-.team-col {
-  position: sticky; left: 0; z-index: 10; background: var(--panel-2);
-  min-width: 168px; max-width: 200px; padding: 8px 12px; vertical-align: middle;
+table.board thead th.team-head {
+  text-transform: none; letter-spacing: 0; color: var(--text);
+  white-space: normal; min-width: 150px; vertical-align: bottom;
 }
-.team-name { font-weight: 700; font-size: 1.05rem; line-height: 1.2; }
-.team-seed { font-family: var(--mono); font-size: .82rem; color: var(--muted); }
+.round-col {
+  position: sticky; left: 0; z-index: 10; background: var(--panel-2);
+  padding: 8px 14px; vertical-align: middle; white-space: nowrap;
+}
+.round-name { font-weight: 700; font-size: 1.05rem; }
+.team-name { font-weight: 700; font-size: .95rem; line-height: 1.2; }
+.team-seed { font-family: var(--mono); font-size: .78rem; color: var(--muted); font-weight: 400; }
 
 td.cell { padding: 0; min-width: 150px; height: 76px; vertical-align: stretch; }
 .pick {
@@ -329,7 +334,7 @@ body.board-focus .legend { padding-bottom: 4px; }
   main { padding: 0; max-width: none; }
   .board-scroll { max-height: none; overflow: visible; border: none; }
   table.board th, table.board td { border-color: #ccc; }
-  table.board thead th, .team-col { position: static; background: #f0f0f0 !important; color: #000; }
+  table.board thead th, .round-col { position: static; background: #f0f0f0 !important; color: #000; }
   .pick .player { color: #000; }
   .pick.onclock { box-shadow: none; }
 }
